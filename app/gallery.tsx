@@ -1,30 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Avatar from "boring-avatars";
-import {
-  FaRegCircleXmark,
-  FaLocationDot,
-  FaPhone,
-  FaEnvelope,
-} from "react-icons/fa6";
+import { FaRegCircleXmark, FaLocationDot, FaPhone, FaEnvelope } from "react-icons/fa6";
 
 import Controls from "./controls";
 import Modal from "./modal";
-
 import { User } from "./types/user";
 
 export type GalleryProps = {
   users: User[];
 };
+
+type SortField = "name" | "company" | "email"; 
+type SortDirection = "ascending" | "descending";
+
 const Gallery = ({ users }: GalleryProps) => {
   const [usersList, setUsersList] = useState(users);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("ascending");
 
   const handleModalOpen = (id: number) => {
     const user = usersList.find((item) => item.id === id) || null;
-
     if (user) {
       setSelectedUser(user);
       setIsModalOpen(true);
@@ -35,12 +34,34 @@ const Gallery = ({ users }: GalleryProps) => {
     setSelectedUser(null);
     setIsModalOpen(false);
   };
+  
+  const sortUsers = useCallback(() => {
+    const sortedUsers = [...usersList].sort((a, b) => {
+      const aValue =
+        sortField === "company" ? a.company.name : (a[sortField] as string); 
+      const bValue =
+        sortField === "company" ? b.company.name : (b[sortField] as string);
+
+      if (aValue < bValue) return sortDirection === "ascending" ? -1 : 1;
+      if (aValue > bValue) return sortDirection === "ascending" ? 1 : -1;
+      return 0;
+    });
+
+    setUsersList(sortedUsers);
+  }, [sortField, sortDirection, usersList]);
+ 
+  useEffect(() => {
+    sortUsers();
+  }, [sortUsers]);
 
   return (
     <div className="user-gallery">
       <div className="heading">
         <h1 className="title">Users</h1>
-        <Controls />
+        <Controls
+          onSortFieldChange={setSortField}
+          onSortDirectionChange={setSortDirection}
+        />
       </div>
       <div className="items">
         {usersList.map((user, index) => (
